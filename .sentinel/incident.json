@@ -1,0 +1,43 @@
+{
+  "investigation": {
+    "error": {
+      "service": "order-history",
+      "file": "seeded_bugs/demo_app/inventory.py",
+      "line": 6,
+      "message": "ValueError: too many values to unpack (expected 3)"
+    },
+    "blame": {
+      "commit_hash": "c2466beff2",
+      "author": "Sentinel Sandbox <sentinel-sandbox@local>",
+      "committed_date": "2026-09-06T01:38:07+05:30",
+      "commit_message": "Seed bug: recent_items() slices one extra element, returning n+1 items instead of n",
+      "line_content": "    return list(reversed(cart.items[-n - 1:]))"
+    },
+    "code_context": {
+      "start_line": 4,
+      "end_line": 6,
+      "source": "def recent_items(cart, n):\n    \"\"\"Return the n most recently added items, most recent first.\"\"\"\n    return list(reversed(cart.items[-n - 1:]))",
+      "is_full_function": true
+    },
+    "similar_incidents": [],
+    "hypothesis": {
+      "root_cause": "recent_items() slices cart.items[-n-1:], which returns n+1 items instead of n (an off-by-one error introduced in commit c2466beff2). Downstream code that unpacks the result expecting exactly n (here, 3) elements fails with \"ValueError: too many values to unpack (expected 3)\" because it actually receives 4 items.",
+      "confidence": 0.9,
+      "evidence": [
+        "Git blame commit message explicitly states: 'Seed bug: recent_items() slices one extra element, returning n+1 items instead of n'",
+        "The code `cart.items[-n - 1:]` slices n+1 elements from the end rather than n, confirmed by direct inspection of the line",
+        "The error 'too many values to unpack (expected 3)' is consistent with a caller doing something like `a, b, c = recent_items(cart, 3)` and receiving 4 items instead of 3, matching the off-by-one described in the blame",
+        "No prior similar incidents in memory, so this is treated as a fresh, isolated seeded bug rather than a recurring pattern"
+      ],
+      "suggested_fix_direction": "Change the slice to `cart.items[-n:]` (guarding for n=0 or n > len(cart.items) as needed) so recent_items returns exactly n items, matching callers' unpacking expectations."
+    }
+  },
+  "fix": {
+    "branch_name": "sentinel/fix-inventory-L6-20260905202255",
+    "base_branch": "prod",
+    "file_path": "seeded_bugs/demo_app/inventory.py",
+    "test_file_path": "tests/test_recent_items_fix.py",
+    "commit_message": "fix: correct off-by-one slice in recent_items()",
+    "summary": "recent_items() sliced cart.items[-n-1:], returning n+1 items instead of n and breaking downstream unpacking. Fixed to slice cart.items[-n:] and added a guard for n<=0."
+  }
+}
