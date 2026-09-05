@@ -7,7 +7,8 @@ class Cart:
 
 
 def add_item(cart, item):
-    return cart.items.append(item)
+    cart.items.append(item)
+    return cart
 
 
 def total_price(cart):
